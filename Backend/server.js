@@ -9,12 +9,16 @@ import menteeRoutes from './routes/menteeRoutes.js';
 import opportunityRoutes from './routes/opportunityRoutes.js';
 import mentorshipRoutes from './routes/mentorshipRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import { createServer } from 'http';
+import { initializeSocket } from './services/socketService.js';
 
 // Load environment variables
 dotenv.config();
 
 // Create Express app
 const app = express();
+const httpServer = createServer(app);
+const io = initializeSocket(httpServer);
 
 // Connect to MongoDB
 connectDB();
@@ -43,6 +47,6 @@ app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 }); 

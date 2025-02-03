@@ -28,6 +28,16 @@ const userSchema = new mongoose.Schema({
   interests: [{
     type: String
   }],
+  contactInfo: {
+    whatsapp: String,
+    linkedin: String,
+    twitter: String,
+    preferredContact: {
+      type: String,
+      enum: ['whatsapp', 'email', 'linkedin', 'twitter'],
+      default: 'email'
+    }
+  },
 }, {
   timestamps: true
 });

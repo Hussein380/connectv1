@@ -9,6 +9,10 @@ const opportunitySchema = mongoose.Schema({
     type: String,
     required: true
   },
+  applicationLink: {
+    type: String,
+    required: false // Optional field
+  },
   mentor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

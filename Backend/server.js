@@ -11,6 +11,7 @@ import mentorshipRoutes from './routes/mentorshipRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import { createServer } from 'http';
 import { initializeSocket } from './services/socketService.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -25,8 +26,17 @@ connectDB();
 
 // Middleware
 app.use(cors({
-  origin: ['https://your-frontend-app-name.vercel.app', 'http://localhost:5173'],
-  credentials: true
+  origin: process.env.NODE_ENV === 'production' 
+    ? [
+        'https://your-frontend-app-name.vercel.app', 
+        'http://localhost:5173',
+        // Add any other allowed origins
+      ]
+    : '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -43,6 +53,7 @@ app.use('/api/mentee', menteeRoutes);
 app.use('/api/opportunities', opportunityRoutes);
 app.use('/api/mentorship', mentorshipRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Error Handling
 app.use(notFound);

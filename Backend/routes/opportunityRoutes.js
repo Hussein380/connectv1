@@ -1,22 +1,29 @@
 import express from 'express';
 import { protect, isMentor } from '../middleware/authMiddleware.js';
 import {
-  getOpportunities,
   createOpportunity,
+  getOpportunities,
+  getMentorOpportunities,
+  getOpportunityById,
   updateOpportunity,
-  deleteOpportunity,
-  getOpportunityById
+  deleteOpportunity
 } from '../controllers/opportunityController.js';
 
 const router = express.Router();
 
-router.route('/')
-  .get(protect, getOpportunities)
-  .post(protect, isMentor, createOpportunity);
+// Public routes
+router.get('/', getOpportunities);
+router.get('/:id', getOpportunityById);
 
-router.route('/:id')
-  .get(protect, getOpportunityById)
-  .put(protect, isMentor, updateOpportunity)
-  .delete(protect, isMentor, deleteOpportunity);
+// Protected routes (require authentication)
+router.use(protect);
+
+// Get mentor's opportunities
+router.get('/mentor/me', getMentorOpportunities);
+
+// Mentor-only routes
+router.post('/', isMentor, createOpportunity);
+router.put('/:id', isMentor, updateOpportunity);
+router.delete('/:id', isMentor, deleteOpportunity);
 
 export default router; 

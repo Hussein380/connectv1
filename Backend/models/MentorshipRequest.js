@@ -11,6 +11,11 @@ const mentorshipRequestSchema = mongoose.Schema({
     ref: 'User',
     required: true
   },
+  opportunityId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Opportunity',
+    required: true
+  },
   message: {
     type: String,
     required: true
@@ -19,7 +24,8 @@ const mentorshipRequestSchema = mongoose.Schema({
     type: String,
     enum: ['pending', 'accepted', 'rejected'],
     default: 'pending'
-  }
+  },
+  notes: String
 }, {
   timestamps: true
 });

@@ -3,7 +3,8 @@ import { protect, isMentor } from '../middleware/authMiddleware.js';
 import { 
   getMentorProfile, 
   updateMentorProfile,
-  getMentorOpportunities 
+  getMentorOpportunities,
+  updateContactSettings
 } from '../controllers/mentorController.js';
 
 const router = express.Router();
@@ -16,5 +17,7 @@ router.route('/profile')
   .put(updateMentorProfile);
 
 router.get('/opportunities', getMentorOpportunities);
+
+router.put('/contact-settings', updateContactSettings);
 
 export default router; 

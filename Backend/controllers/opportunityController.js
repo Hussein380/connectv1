@@ -1,35 +1,60 @@
 import asyncHandler from 'express-async-handler';
 import Opportunity from '../models/Opportunity.js';
 
-// @desc    Create new opportunity
+// @desc    Create a new opportunity
 // @route   POST /api/opportunities
 // @access  Private (Mentors only)
 export const createOpportunity = asyncHandler(async (req, res) => {
-  const { title, description } = req.body;
+  const {
+    title,
+    description,
+    requirements,
+    deadline,
+    applicationLink,
+    type
+  } = req.body;
 
+  // Create opportunity with mentor ID from authenticated user
   const opportunity = await Opportunity.create({
     title,
     description,
-    mentor: req.user._id
+    requirements,
+    deadline,
+    applicationLink,
+    type,
+    mentor: req.user._id // Set the mentor field to the authenticated user's ID
   });
 
-  res.status(201).json(opportunity);
+  if (opportunity) {
+    res.status(201).json(opportunity);
+  } else {
+    res.status(400);
+    throw new Error('Invalid opportunity data');
+  }
 });
 
 // @desc    Get all opportunities
 // @route   GET /api/opportunities
-// @access  Private
+// @access  Public
 export const getOpportunities = asyncHandler(async (req, res) => {
-  const opportunities = await Opportunity.find({ status: 'open' })
+  const opportunities = await Opportunity.find({})
     .populate('mentor', 'name email')
-    .sort('-createdAt');
-
+    .sort({ createdAt: -1 });
   res.json(opportunities);
 });
 
-// @desc    Get opportunity by ID
-// @route   GET /api/opportunities/:id
+// @desc    Get mentor's opportunities
+// @route   GET /api/opportunities/mentor/:mentorId
 // @access  Private
+export const getMentorOpportunities = asyncHandler(async (req, res) => {
+  const opportunities = await Opportunity.find({ mentor: req.user._id })
+    .sort({ createdAt: -1 });
+  res.json(opportunities);
+});
+
+// @desc    Get single opportunity
+// @route   GET /api/opportunities/:id
+// @access  Public
 export const getOpportunityById = asyncHandler(async (req, res) => {
   const opportunity = await Opportunity.findById(req.params.id)
     .populate('mentor', 'name email');
@@ -53,17 +78,18 @@ export const updateOpportunity = asyncHandler(async (req, res) => {
     throw new Error('Opportunity not found');
   }
 
-  // Check if user is the mentor who created the opportunity
+  // Check if the logged-in user is the mentor who created this opportunity
   if (opportunity.mentor.toString() !== req.user._id.toString()) {
-    res.status(401);
-    throw new Error('Not authorized');
+    res.status(403);
+    throw new Error('Not authorized to update this opportunity');
   }
 
-  opportunity.title = req.body.title || opportunity.title;
-  opportunity.description = req.body.description || opportunity.description;
-  opportunity.status = req.body.status || opportunity.status;
+  const updatedOpportunity = await Opportunity.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true, runValidators: true }
+  );
 
-  const updatedOpportunity = await opportunity.save();
   res.json(updatedOpportunity);
 });
 
@@ -78,12 +104,12 @@ export const deleteOpportunity = asyncHandler(async (req, res) => {
     throw new Error('Opportunity not found');
   }
 
-  // Check if user is the mentor who created the opportunity
+  // Check if the logged-in user is the mentor who created this opportunity
   if (opportunity.mentor.toString() !== req.user._id.toString()) {
-    res.status(401);
-    throw new Error('Not authorized');
+    res.status(403);
+    throw new Error('Not authorized to delete this opportunity');
   }
 
-  await opportunity.deleteOne();
+  await Opportunity.findByIdAndDelete(req.params.id);
   res.json({ message: 'Opportunity removed' });
 }); 

@@ -29,15 +29,24 @@ const userSchema = new mongoose.Schema({
     type: String
   }],
   contactInfo: {
-    whatsapp: String,
-    linkedin: String,
-    twitter: String,
+    whatsapp: {
+      type: String,
+      default: ''
+    },
+    email: {
+      type: String,
+      default: function() {
+        return this.email;
+      }
+    },
     preferredContact: {
       type: String,
-      enum: ['whatsapp', 'email', 'linkedin', 'twitter'],
+      enum: ['whatsapp', 'email'],
       default: 'email'
     }
   },
+  expertise: [String],
+  avatar: String
 }, {
   timestamps: true
 });

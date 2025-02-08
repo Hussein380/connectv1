@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/authContext';
-import { mentorAPI } from '../services/api';
+import { useAuth } from '@/context/AuthContext';
+import { mentorAPI } from '@/services/api';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Textarea } from './ui/Textarea';

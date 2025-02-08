@@ -1,20 +1,23 @@
 import express from 'express';
-import { protect } from '../middleware/authMiddleware.js';
+import { protect, isMentor } from '../middleware/authMiddleware.js';
 import {
   sendMentorshipRequest,
   getMentorshipRequests,
-  getMyMentorshipRequests,
-  updateMentorshipRequest
+  getMyRequests,
+  acceptRequest,
+  rejectRequest
 } from '../controllers/mentorshipController.js';
 
 const router = express.Router();
 
-// Protect all routes
+// Protected routes that both mentors and mentees can access
 router.use(protect);
+router.post('/request', sendMentorshipRequest);
+router.get('/my-requests', getMyRequests);
 
-router.get('/requests', getMentorshipRequests);
-router.get('/my-requests', getMyMentorshipRequests);
-router.post('/request/:mentorId', sendMentorshipRequest);
-router.put('/request/:requestId', updateMentorshipRequest);
+// Mentor-only routes
+router.get('/requests', isMentor, getMentorshipRequests);
+router.put('/request/:id/accept', isMentor, acceptRequest);
+router.put('/request/:id/reject', isMentor, rejectRequest);
 
-export default router; 
+export default router;

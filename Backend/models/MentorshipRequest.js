@@ -1,19 +1,14 @@
 import mongoose from 'mongoose';
 
 const mentorshipRequestSchema = mongoose.Schema({
-  mentorId: {
+  mentor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   },
-  menteeId: {
+  mentee: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
-  },
-  opportunityId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Opportunity',
     required: true
   },
   message: {
@@ -25,11 +20,17 @@ const mentorshipRequestSchema = mongoose.Schema({
     enum: ['pending', 'accepted', 'rejected'],
     default: 'pending'
   },
-  notes: String
+  notes: {
+    type: String,
+    default: ''
+  }
 }, {
   timestamps: true
 });
 
+// Add index to prevent duplicate requests
+mentorshipRequestSchema.index({ mentor: 1, mentee: 1 }, { unique: true });
+
 const MentorshipRequest = mongoose.model('MentorshipRequest', mentorshipRequestSchema);
 
-export default MentorshipRequest; 
+export default MentorshipRequest;

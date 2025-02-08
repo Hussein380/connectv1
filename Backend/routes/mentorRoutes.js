@@ -1,23 +1,29 @@
 import express from 'express';
-import { protect, isMentor } from '../middleware/authMiddleware.js';
-import { 
-  getMentorProfile, 
-  updateMentorProfile,
-  getMentorOpportunities,
-  updateContactSettings
+import {
+  getAllMentors,
+  getMentorById,
+  getMentorProfileMe as getMentorProfile,
+  updateMentorProfileNew as updateMentorProfile,
+  updateContactInfoNew as updateContactInfo,
+  getMentorOpportunitiesMe as getMentorOpportunities
 } from '../controllers/mentorController.js';
+import { protect, isMentor } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.use(protect); // All mentor routes require authentication
-router.use(isMentor); // All mentor routes require mentor role
+// Public routes
+router.get('/', getAllMentors);
+router.get('/:id', getMentorById);
 
-router.route('/profile')
-  .get(getMentorProfile)
-  .put(updateMentorProfile);
+// Protected routes (require authentication)
+router.use(protect);
 
-router.get('/opportunities', getMentorOpportunities);
+// Mentor-only routes
+router.get('/profile/me', isMentor, getMentorProfile);
+router.put('/profile', isMentor, updateMentorProfile);
+router.put('/contact', isMentor, updateContactInfo);
 
-router.put('/contact-settings', updateContactSettings);
+// Opportunity routes
+router.get('/opportunities/me', isMentor, getMentorOpportunities);
 
-export default router; 
+export default router;

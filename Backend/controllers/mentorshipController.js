@@ -1,105 +1,209 @@
 import asyncHandler from 'express-async-handler';
-import MentorshipRequest from '../models/MentorshipRequest.js';
 import User from '../models/User.js';
+import MentorshipRequest from '../models/MentorshipRequest.js';
 
-// @desc    Send mentorship request
-// @route   POST /api/mentorship/request/:mentorId
-// @access  Private (Mentee only)
+// @desc    Send a mentorship request
+// @route   POST /api/mentorship/request
+// @access  Private (Mentees only)
 export const sendMentorshipRequest = asyncHandler(async (req, res) => {
-    const mentorId = req.params.mentorId;
-    const menteeId = req.user._id;
-    const { message } = req.body;
+  const { mentorId, message } = req.body;
+  const menteeId = req.user._id;
 
-    // Check if mentor exists
-    const mentor = await User.findById(mentorId);
-    if (!mentor || mentor.role !== 'mentor') {
-        res.status(404);
-        throw new Error('Mentor not found');
-    }
+  // Verify that the user is not a mentor trying to send a request
+  if (req.user.role === 'mentor') {
+    res.status(400);
+    throw new Error('Mentors cannot send mentorship requests');
+  }
 
-    // Check if request already exists
-    const existingRequest = await MentorshipRequest.findOne({
-        mentorId,
-        menteeId,
-        status: 'pending'
-    });
+  // Check if mentor exists and is actually a mentor
+  const mentor = await User.findById(mentorId);
+  if (!mentor || mentor.role !== 'mentor') {
+    res.status(404);
+    throw new Error('Mentor not found');
+  }
 
-    if (existingRequest) {
-        res.status(400);
-        throw new Error('A pending request already exists');
-    }
-
+  try {
     const request = await MentorshipRequest.create({
-        mentorId,
-        menteeId,
-        message
+      mentor: mentorId,
+      mentee: menteeId,
+      message,
+      status: 'pending'
     });
 
-    res.status(201).json(request);
+    // Populate mentee info for the response
+    const populatedRequest = await request.populate('mentee', 'name email');
+    res.status(201).json(populatedRequest);
+  } catch (error) {
+    // Handle duplicate request error
+    if (error.code === 11000) {
+      res.status(400);
+      throw new Error('You already have a request with this mentor');
+    }
+    throw error;
+  }
 });
 
 // @desc    Get all mentorship requests for a mentor
 // @route   GET /api/mentorship/requests
-// @access  Private (Mentor only)
+// @access  Private (Mentors only)
 export const getMentorshipRequests = asyncHandler(async (req, res) => {
-    if (req.user.role !== 'mentor') {
-        res.status(403);
-        throw new Error('Only mentors can access this route');
-    }
+  const requests = await MentorshipRequest.find({ mentor: req.user._id })
+    .populate('mentee', 'name email bio interests')
+    .sort('-createdAt');
 
-    const requests = await MentorshipRequest.find({ mentorId: req.user._id })
-        .populate('menteeId', 'name email')
-        .sort('-createdAt');
-
-    res.json(requests);
+  res.json(requests);
 });
 
-// @desc    Get mentee's own requests
+// @desc    Get mentee's sent requests
 // @route   GET /api/mentorship/my-requests
-// @access  Private (Mentee only)
-export const getMyMentorshipRequests = asyncHandler(async (req, res) => {
-    if (req.user.role !== 'mentee') {
-        res.status(403);
-        throw new Error('Only mentees can access this route');
-    }
+// @access  Private
+export const getMyRequests = asyncHandler(async (req, res) => {
+  const requests = await MentorshipRequest.find({ mentee: req.user._id })
+    .populate('mentor', 'name email title')
+    .sort('-createdAt');
 
-    const requests = await MentorshipRequest.find({ menteeId: req.user._id })
-        .populate('mentorId', 'name email contactInfo')
-        .sort('-createdAt');
-
-    res.json(requests);
+  res.json(requests);
 });
 
-// @desc    Update mentorship request status
-// @route   PUT /api/mentorship/request/:requestId
-// @access  Private (Mentor only)
-export const updateMentorshipRequest = asyncHandler(async (req, res) => {
-    const request = await MentorshipRequest.findById(req.params.requestId);
+// @desc    Accept a mentorship request
+// @route   PUT /api/mentorship/request/:id/accept
+// @access  Private (Mentors only)
+export const acceptRequest = asyncHandler(async (req, res) => {
+  try {
+    console.log('Starting acceptRequest with ID:', req.params.id);
+    console.log('User ID:', req.user._id);
+
+    const request = await MentorshipRequest.findById(req.params.id);
+    console.log('Found request:', request);
 
     if (!request) {
-        res.status(404);
-        throw new Error('Request not found');
+      console.log('Request not found for ID:', req.params.id);
+      res.status(404);
+      throw new Error('Request not found');
     }
 
-    // Ensure the mentor owns this request
-    if (request.mentorId.toString() !== req.user._id.toString()) {
-        res.status(403);
-        throw new Error('Not authorized to update this request');
+    // Verify the mentor is the one accepting
+    console.log('Comparing mentor IDs:', {
+      requestMentorId: request.mentor.toString(),
+      currentUserId: req.user._id.toString()
+    });
+
+    if (request.mentor.toString() !== req.user._id.toString()) {
+      console.log('Authorization failed - IDs do not match');
+      res.status(403);
+      throw new Error('Not authorized to accept this request');
     }
 
-    const { status } = req.body;
-    if (!['accepted', 'rejected'].includes(status)) {
-        res.status(400);
-        throw new Error('Invalid status');
+    // Check if request is already accepted or rejected
+    console.log('Current request status:', request.status);
+    if (request.status !== 'pending') {
+      console.log('Request already processed');
+      res.status(400);
+      throw new Error(`Request has already been ${request.status}`);
     }
 
-    request.status = status;
-    const updatedRequest = await request.save();
+    // Get mentor's contact information
+    console.log('Fetching mentor info for ID:', req.user._id);
+    const mentor = await User.findById(req.user._id).select('name email contact');
+    console.log('Found mentor:', {
+      id: mentor._id,
+      name: mentor.name,
+      hasContact: !!mentor.contact
+    });
 
-    // Populate mentor and mentee info before sending response
-    const populatedRequest = await MentorshipRequest.findById(updatedRequest._id)
-        .populate('mentorId', 'name email contactInfo')
-        .populate('menteeId', 'name email');
+    if (!mentor) {
+      console.log('Mentor not found for ID:', req.user._id);
+      res.status(404);
+      throw new Error('Mentor not found');
+    }
 
+    // Create contact message
+    console.log('Creating contact message');
+    let contactMessage = `Hello! I (${mentor.name}) have accepted your mentorship request. `;
+
+    // Add contact information based on availability and preference
+    const contact = mentor.contact || {};
+    const preferredMethod = contact.preferredMethod || 'email';
+    
+    let contactMethods = [];
+    
+    if (contact.whatsapp) {
+      contactMethods.push(`WhatsApp: ${contact.whatsapp}`);
+    }
+    if (contact.email || mentor.email) {
+      contactMethods.push(`Email: ${contact.email || mentor.email}`);
+    }
+    if (contact.phone) {
+      contactMethods.push(`Phone: ${contact.phone}`);
+    }
+
+    console.log('Available contact methods:', contactMethods);
+
+    if (contactMethods.length > 0) {
+      contactMessage += `\nYou can reach me through:\n${contactMethods.join('\n')}`;
+      if (preferredMethod && contact[preferredMethod]) {
+        contactMessage += `\n\nPreferred contact method: ${preferredMethod}`;
+      }
+    } else {
+      contactMessage += `\nYou can reach me at: ${mentor.email}`;
+    }
+
+    console.log('Final contact message created');
+
+    // Update request status and notes
+    console.log('Updating request status and notes');
+    request.status = 'accepted';
+    request.notes = contactMessage;
+    await request.save();
+    console.log('Request updated successfully');
+
+    // Populate the response with mentor and mentee info
+    console.log('Populating response data');
+    const populatedRequest = await MentorshipRequest.findById(request._id)
+      .populate('mentee', 'name email')
+      .populate('mentor', 'name email contact');
+
+    console.log('Sending response');
     res.json(populatedRequest);
-}); 
+  } catch (error) {
+    console.error('Error in acceptRequest:', {
+      message: error.message,
+      stack: error.stack,
+      requestId: req.params.id,
+      userId: req.user?._id
+    });
+    
+    if (!res.headersSent) {
+      res.status(error.status || 500);
+      throw new Error(error.message || 'Error accepting mentorship request');
+    }
+  }
+});
+
+// @desc    Reject a mentorship request
+// @route   PUT /api/mentorship/request/:id/reject
+// @access  Private (Mentors only)
+export const rejectRequest = asyncHandler(async (req, res) => {
+  const request = await MentorshipRequest.findById(req.params.id);
+
+  if (!request) {
+    res.status(404);
+    throw new Error('Request not found');
+  }
+
+  // Verify the mentor is the one rejecting
+  if (request.mentor.toString() !== req.user._id.toString()) {
+    res.status(403);
+    throw new Error('Not authorized');
+  }
+
+  request.status = 'rejected';
+  await request.save();
+
+  // Populate the response
+  const populatedRequest = await request
+    .populate('mentee', 'name email')
+    .populate('mentor', 'name email');
+
+  res.json(populatedRequest);
+});

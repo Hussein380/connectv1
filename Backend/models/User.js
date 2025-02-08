@@ -18,35 +18,64 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['mentor', 'mentee'],
+    enum: ['mentor', 'mentee', 'admin'],
     required: true
+  },
+  title: {
+    type: String,
+    default: ''
   },
   bio: {
     type: String,
     default: ''
   },
-  interests: [{
-    type: String
+  expertise: [{
+    type: String,
+    trim: true
   }],
-  contactInfo: {
-    whatsapp: {
-      type: String,
-      default: ''
-    },
+  interests: [{
+    type: String,
+    trim: true
+  }],
+  contact: {
     email: {
       type: String,
       default: function() {
         return this.email;
       }
     },
-    preferredContact: {
+    phone: {
       type: String,
-      enum: ['whatsapp', 'email'],
+      default: ''
+    },
+    whatsapp: {
+      type: String,
+      default: ''
+    },
+    preferredMethod: {
+      type: String,
+      enum: ['email', 'phone', 'whatsapp'],
       default: 'email'
     }
   },
-  expertise: [String],
-  avatar: String
+  stats: {
+    activeMentees: {
+      type: Number,
+      default: 0
+    },
+    totalSessions: {
+      type: Number,
+      default: 0
+    },
+    rating: {
+      type: Number,
+      default: 0
+    }
+  },
+  isProfileComplete: {
+    type: Boolean,
+    default: false
+  }
 }, {
   timestamps: true
 });
@@ -61,9 +90,9 @@ userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     next();
   }
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-const User = mongoose.model('User', userSchema);
-export default User; 
+export default mongoose.model('User', userSchema);

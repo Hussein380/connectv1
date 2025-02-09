@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LampContainer } from '../components/ui/Lamp';
 import { ChevronDown, GraduationCap, Users, Briefcase, ArrowRight } from 'lucide-react';
 import SignInDialog from '../components/ui/SignInDialog';
+import { Button } from '../components/ui/Button';
 
 const Home = () => {
   const [showMore, setShowMore] = useState(false);
@@ -30,9 +31,26 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-slate-950">
       {/* Navigation */}
-      <nav className="absolute top-0 right-0 p-6 z-50">
-        <SignInDialog />
+      <nav className="absolute top-0 right-0 p-6 z-50 flex items-center gap-4">
+        <Button
+          variant="ghost"
+          className="text-white hover:bg-white/10"
+          onClick={() => setShowSignIn(true)}
+        >
+          Sign In
+        </Button>
+        <Link to="/register">
+          <Button className="bg-cyan-500 text-white hover:bg-cyan-600">
+            Get Started
+          </Button>
+        </Link>
       </nav>
+
+      {/* Sign In Dialog */}
+      <SignInDialog 
+        open={showSignIn} 
+        onOpenChange={setShowSignIn}
+      />
 
       {/* Hero Section */}
       <LampContainer>

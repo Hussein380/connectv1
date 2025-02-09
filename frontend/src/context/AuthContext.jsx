@@ -33,16 +33,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const data = await authAPI.login(credentials);
-      localStorage.setItem('token', data.token);
       setUser(data.user);
-      navigate('/dashboard');
-      return data.user;
+      localStorage.setItem('token', data.token);
+      return data;
     } catch (error) {
-      toast({
-        title: "Login Failed",
-        description: error.response?.data?.message || "Invalid credentials",
-        variant: "destructive"
-      });
+      console.error('Login failed:', error);
       throw error;
     }
   };

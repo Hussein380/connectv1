@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LampContainer } from '../components/ui/Lamp';
 import { ChevronDown, GraduationCap, Users, Briefcase, ArrowRight } from 'lucide-react';
-import { SignInDialog } from '../components/ui/SignInDialog';
+import SignInDialog from '../components/ui/SignInDialog';
 
 const Home = () => {
   const [showMore, setShowMore] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
 
   const features = [
     {

@@ -1,125 +1,82 @@
-import React, { useId } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from './Dialog';
 import { Button } from './Button';
 import { Input } from './Input';
 import { Label } from './Label';
-import { Checkbox } from './Checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './Dialog';
+import { toast } from './Toast';
+import { useNavigate } from 'react-router-dom';
 
-export function SignInDialog() {
-  const id = useId();
-  const navigate = useNavigate();
+const SignInDialog = ({ open, onOpenChange }) => {
   const { login } = useAuth();
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    email: '',
+    password: ''
+  });
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
-      const formData = new FormData(e.target);
-      await login(formData.get('email'), formData.get('password'));
+      await login({
+        email: formData.email.trim(),
+        password: formData.password
+      });
+      
+      onOpenChange(false);
       navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to login');
+    } catch (error) {
+      console.error('SignIn error:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to sign in",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">Sign in</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
-        <div className="flex flex-col items-center gap-2">
-          <div
-            className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border"
-            aria-hidden="true"
-          >
-            <svg
-              className="stroke-zinc-800 dark:stroke-zinc-100"
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 32 32"
-              aria-hidden="true"
-            >
-              <circle cx="16" cy="16" r="12" fill="none" strokeWidth="8" />
-            </svg>
+        <DialogHeader>
+          <DialogTitle>Sign In</DialogTitle>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              required
+            />
           </div>
-          <DialogHeader>
-            <DialogTitle className="sm:text-center">Welcome back</DialogTitle>
-            <DialogDescription className="sm:text-center">
-              Enter your credentials to login to your account.
-            </DialogDescription>
-          </DialogHeader>
-        </div>
 
-        {error && (
-          <div className="text-red-500 text-sm text-center mb-4">
-            {error}
+          <div>
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+              required
+            />
           </div>
-        )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor={`${id}-email`}>Email</Label>
-              <Input 
-                id={`${id}-email`}
-                name="email"
-                placeholder="hi@example.com" 
-                type="email" 
-                required 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor={`${id}-password`}>Password</Label>
-              <Input
-                id={`${id}-password`}
-                name="password"
-                placeholder="Enter your password"
-                type="password"
-                required
-              />
-            </div>
-          </div>
-          <div className="flex justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Checkbox id={`${id}-remember`} />
-              <Label htmlFor={`${id}-remember`} className="font-normal text-muted-foreground">
-                Remember me
-              </Label>
-            </div>
-            <a className="text-sm underline hover:no-underline" href="#">
-              Forgot password?
-            </a>
-          </div>
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in'}
+            {loading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
-
-        <div className="flex items-center gap-3 before:h-px before:flex-1 before:bg-border after:h-px after:flex-1 after:bg-border">
-          <span className="text-xs text-muted-foreground">Or</span>
-        </div>
-
-        <Button variant="outline" type="button" onClick={() => navigate('/register')}>
-          Create Account
-        </Button>
       </DialogContent>
     </Dialog>
   );
-} 
+};
+
+export default SignInDialog; 

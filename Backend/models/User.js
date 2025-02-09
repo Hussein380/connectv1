@@ -14,12 +14,13 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true
+    required: true,
+    select: false
   },
   role: {
     type: String,
     enum: ['mentor', 'mentee', 'admin'],
-    required: true
+    default: 'mentee'
   },
   title: {
     type: String,
@@ -80,12 +81,12 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Method to compare password
+// Match password method
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Middleware to hash password before saving
+// Encrypt password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
     next();
@@ -95,4 +96,5 @@ userSchema.pre('save', async function(next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
-export default mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+export default User;

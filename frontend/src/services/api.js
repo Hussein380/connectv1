@@ -34,8 +34,21 @@ api.interceptors.response.use(
 
 export const authAPI = {
   login: async (credentials) => {
-    const response = await api.post('/api/auth/login', credentials);
-    return response.data;
+    try {
+      const response = await api.post('/api/auth/login', credentials, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.data.token) {
+        localStorage.setItem('token', response.data.token);
+      }
+      return response.data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   },
   register: async (userData) => {
     const response = await api.post('/api/auth/register', userData);

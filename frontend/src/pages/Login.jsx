@@ -23,24 +23,15 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const payload = {
+      const credentials = {
         email: formData.email.trim(),
         password: formData.password
       };
       
-      await login(payload);
-      toast({
-        title: "Success",
-        description: "Logged in successfully",
-        variant: "default"
-      });
+      await login(credentials);
       navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
-      setError(
-        error.response?.data?.message ||
-        'Unable to connect to server. Please try again later.'
-      );
       toast({
         title: "Error",
         description: error.response?.data?.message || "Failed to login",

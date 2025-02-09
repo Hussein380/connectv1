@@ -21,6 +21,11 @@ const SignInDialog = ({ open, onOpenChange }) => {
     setLoading(true);
 
     try {
+      console.log('Attempting login with:', {
+        email: formData.email.trim(),
+        password: '***'
+      });
+      
       await login({
         email: formData.email.trim(),
         password: formData.password
@@ -29,7 +34,13 @@ const SignInDialog = ({ open, onOpenChange }) => {
       onOpenChange(false);
       navigate('/dashboard');
     } catch (error) {
-      console.error('SignIn error:', error);
+      console.error('SignIn error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+      
       toast({
         title: "Error",
         description: error.response?.data?.message || "Failed to sign in",

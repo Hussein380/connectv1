@@ -4,9 +4,11 @@ import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// These routes will be prefixed with /api/auth
-router.post('/register', register);
+// Public routes
 router.post('/login', login);
+router.post('/register', register);
+
+// Protected routes
 router.get('/profile', protect, getCurrentUser);
 
 export default router; 

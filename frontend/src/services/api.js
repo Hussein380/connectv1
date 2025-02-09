@@ -35,12 +35,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: async (credentials) => {
     try {
-      const response = await api.post('/api/auth/login', credentials, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
+      const response = await api.post('/api/auth/login', credentials);
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
       }

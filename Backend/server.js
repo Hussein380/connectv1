@@ -24,7 +24,10 @@ const httpServer = createServer(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: [
+    'https://connectv1.vercel.app',
+    'http://localhost:5173'  // for local development
+  ],
   credentials: true
 }));
 

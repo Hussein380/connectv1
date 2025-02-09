@@ -44,7 +44,8 @@ const SignInDialog = ({ open, onOpenChange }) => {
       toast({
         title: "Error",
         description: error.response?.data?.message || "Failed to sign in",
-        variant: "destructive"
+        variant: "destructive",
+        className: "bg-red-500 text-white border-none"
       });
     } finally {
       setLoading(false);

@@ -89,15 +89,19 @@ export const login = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get user profile
+// @desc    Get current user
 // @route   GET /api/auth/me
 // @access  Private
 export const getCurrentUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select('-password');
-  if (user) {
-    res.json(user);
-  } else {
+  if (!user) {
     res.status(404);
     throw new Error('User not found');
   }
-}); 
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  });
+});

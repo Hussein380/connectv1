@@ -105,3 +105,39 @@ export const getCurrentUser = asyncHandler(async (req, res) => {
     role: user.role,
   });
 });
+
+// @desc    Refresh access token
+// @route   POST /api/auth/refresh-token
+// @access  Private
+export const refreshToken = asyncHandler(async (req, res) => {
+  try {
+    // User ID comes from the authenticated user
+    const userId = req.user._id;
+    
+    // Generate a new token
+    const newToken = generateToken(userId);
+    
+    // Get user data to return with the token
+    const user = await User.findById(userId).select('-password');
+    
+    if (!user) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+    
+    // Send response with new token and user data
+    res.json({
+      token: newToken,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    res.status(401);
+    throw new Error('Failed to refresh token');
+  }
+});

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, ChevronRight, Users, Briefcase, GraduationCap } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from '../components/ui/Toast';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -15,20 +16,45 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
+        setLoading(true);
         if (user.role === 'mentor') {
-          const profile = await mentorAPI.getProfile();
-          if (profile) {
-            // updateUser({
-            //   ...user,
-            //   ...profile
-            // });
+          try {
+            const profile = await mentorAPI.getProfile();
+            if (profile) {
+              // updateUser({
+              //   ...user,
+              //   ...profile
+              // });
+            }
+          } catch (profileError) {
+            console.error('Error fetching mentor profile:', profileError);
+            toast({
+              title: "Profile Error",
+              description: "Could not load your profile data. Please try again later.",
+              variant: "destructive"
+            });
           }
         }
 
-        const opportunitiesData = await opportunityAPI.getAll();
-        setOpportunities(opportunitiesData.slice(0, 5));
+        try {
+          const opportunitiesData = await opportunityAPI.getAll();
+          setOpportunities(opportunitiesData.slice(0, 5));
+        } catch (opportunitiesError) {
+          console.error('Error fetching opportunities:', opportunitiesError);
+          toast({
+            title: "Error",
+            description: "Could not load opportunities. Please try again later.",
+            variant: "destructive"
+          });
+          setOpportunities([]);
+        }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        toast({
+          title: "Dashboard Error",
+          description: "Failed to load dashboard data. Please refresh the page.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -64,13 +90,13 @@ const Dashboard = () => {
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="max-w-7xl mx-auto px-4 py-8"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
-      <motion.div 
+      <motion.div
         className="mb-8"
         variants={itemVariants}
       >
@@ -78,19 +104,19 @@ const Dashboard = () => {
           Welcome, {user.name}!
         </h1>
         <p className="text-gray-600 mt-2 text-lg">
-          {user.role === 'mentor' 
+          {user.role === 'mentor'
             ? 'Share your expertise and guide the next generation'
             : 'Find mentors and opportunities to grow your skills'}
         </p>
       </motion.div>
 
       {user.role === 'mentor' && (
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           className="relative group"
         >
           <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
-          <div 
+          <div
             onClick={() => navigate('/setup-profile')}
             className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 bg-white dark:bg-gray-800 rounded-xl p-8 cursor-pointer transform transition duration-500 hover:scale-[1.02]"
           >
@@ -98,17 +124,17 @@ const Dashboard = () => {
               <div className="flex items-center gap-3">
                 <Sparkles className="h-6 w-6 text-primary" />
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {user.bio && user.title && user.expertise?.length > 0 
+                  {user.bio && user.title && user.expertise?.length > 0
                     ? 'Your Mentor Profile'
                     : 'Complete Your Profile'}
                 </h2>
               </div>
               <p className="text-gray-600 dark:text-gray-300 text-lg">
-                {user.bio && user.title && user.expertise?.length > 0 
+                {user.bio && user.title && user.expertise?.length > 0
                   ? 'Keep your profile updated to attract the right mentees'
                   : 'Help students find you by sharing your expertise and experience'}
               </p>
-              
+
               {user.bio && user.title && user.expertise?.length > 0 && (
                 <div className="flex flex-wrap gap-3 mt-4">
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium">
@@ -128,10 +154,10 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-            
+
             <div className="flex items-center gap-2 sm:self-center">
               <span className="px-6 py-3 bg-primary text-white rounded-xl font-semibold shadow-lg shadow-primary/25 group-hover:shadow-primary/40 transition-all duration-300">
-                {user.bio && user.title && user.expertise?.length > 0 
+                {user.bio && user.title && user.expertise?.length > 0
                   ? 'Edit Profile'
                   : 'Setup Profile'}
               </span>
@@ -156,11 +182,11 @@ const Dashboard = () => {
         </Link>
       )}
 
-      <motion.div 
+      <motion.div
         className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8"
         variants={containerVariants}
       >
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 transform transition-all duration-300 hover:shadow-2xl"
         >
@@ -171,7 +197,7 @@ const Dashboard = () => {
           {opportunities.length > 0 ? (
             <div className="space-y-4">
               {opportunities.map((opportunity, index) => (
-                <motion.div 
+                <motion.div
                   key={opportunity._id}
                   variants={itemVariants}
                   className="group p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary/30 transition-all duration-300"
@@ -190,7 +216,7 @@ const Dashboard = () => {
           )}
         </motion.div>
 
-        <motion.div 
+        <motion.div
           variants={itemVariants}
           className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6"
         >

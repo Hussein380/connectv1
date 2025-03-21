@@ -2,9 +2,10 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { mentorshipAPI } from '../services/api';
 import { Button } from '../components/ui/Button';
-import { ExternalLink, Mail, MessageSquare, Phone, BookOpen, Activity, Users } from 'lucide-react';
+import { ExternalLink, Mail, MessageSquare, Phone, BookOpen, Activity, Users, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import MentorshipProgress from '../components/MentorshipProgress';
 
 const MenteeDashboard = () => {
   const { user } = useAuth();
@@ -112,15 +113,26 @@ const MenteeDashboard = () => {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
+          className="grid gap-8 md:grid-cols-3"
         >
           <motion.div
             variants={itemVariants}
-            className="mt-8 space-y-6"
+            className="md:col-span-2 space-y-6"
           >
-            <h2 className="text-2xl font-bold text-white mb-6">Recent Mentorship Requests</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-white mb-6">Recent Mentorship Requests</h2>
+              <Button
+                onClick={() => navigate('/mentorship/my-requests')}
+                variant="ghost"
+                className="text-blue-400 hover:text-blue-300"
+                size="sm"
+              >
+                See all <ChevronRight className="ml-1 h-4 w-4" />
+              </Button>
+            </div>
+
             <div className="grid gap-6">
-              {requests.map((request) => (
+              {requests.slice(0, 3).map((request) => (
                 <motion.div
                   key={request._id}
                   variants={itemVariants}
@@ -199,6 +211,15 @@ const MenteeDashboard = () => {
                 </motion.div>
               )}
             </div>
+          </motion.div>
+
+          {/* Progress Tracking Section */}
+          <motion.div
+            variants={itemVariants}
+            className="space-y-6"
+          >
+            <h2 className="text-2xl font-bold text-white mb-6">Your Progress</h2>
+            <MentorshipProgress />
           </motion.div>
         </motion.div>
       </div>

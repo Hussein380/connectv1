@@ -2,6 +2,55 @@ import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Simple cache implementation for API responses
+class ApiCache {
+  constructor(maxAge = 5 * 60 * 1000) { // Default cache time: 5 minutes
+    this.cache = new Map();
+    this.maxAge = maxAge;
+  }
+
+  get(key) {
+    const cachedItem = this.cache.get(key);
+    if (!cachedItem) return null;
+    
+    const isExpired = Date.now() > cachedItem.timestamp + this.maxAge;
+    if (isExpired) {
+      this.cache.delete(key);
+      return null;
+    }
+    
+    return cachedItem.data;
+  }
+
+  set(key, data) {
+    this.cache.set(key, {
+      data,
+      timestamp: Date.now()
+    });
+  }
+
+  invalidate(keyPattern) {
+    // If keyPattern is a string, invalidate all keys that include it
+    if (typeof keyPattern === 'string') {
+      for (const key of this.cache.keys()) {
+        if (key.includes(keyPattern)) {
+          this.cache.delete(key);
+        }
+      }
+    } else {
+      // If keyPattern is an exact key, just delete that one
+      this.cache.delete(keyPattern);
+    }
+  }
+
+  clear() {
+    this.cache.clear();
+  }
+}
+
+// Create cache instance
+const apiCache = new ApiCache();
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_URL,
@@ -20,11 +69,61 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Add cache logic to response handling
+api.interceptors.request.use(
+  (config) => {
+    // Only cache GET requests
+    if (config.method?.toLowerCase() !== 'get') return config;
+    
+    // Skip cache if explicitly requested
+    if (config.skipCache) return config;
+    
+    // Create a cache key from the request
+    const cacheKey = `${config.url}${JSON.stringify(config.params || {})}`;
+    
+    // Check cache
+    const cachedResponse = apiCache.get(cacheKey);
+    if (cachedResponse) {
+      // Return cached response
+      return {
+        ...config,
+        adapter: () => Promise.resolve({
+          data: cachedResponse,
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config,
+          request: {}
+        }),
+        cached: true
+      };
+    }
+    
+    return config;
+  }
+);
+
+// Store successful GET responses in cache
+api.interceptors.response.use(
+  (response) => {
+    // Only cache GET requests that aren't already from cache
+    if (response.config.method?.toLowerCase() === 'get' && !response.config.cached) {
+      const cacheKey = `${response.config.url}${JSON.stringify(response.config.params || {})}`;
+      apiCache.set(cacheKey, response.data);
+    }
+    
+    return response;
+  }
+);
+
 // Handle response errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Don't redirect if it's a token refresh attempt that failed
+    const isRefreshRequest = error.config?.url?.includes('/api/auth/refresh-token');
+    
+    if (error.response?.status === 401 && !isRefreshRequest) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
@@ -35,6 +134,9 @@ api.interceptors.response.use(
 export const authAPI = {
   login: async (credentials) => {
     try {
+      // Clear cache on login
+      apiCache.clear();
+      
       const response = await api.post('/api/auth/login', credentials);
       if (response.data.token) {
         localStorage.setItem('token', response.data.token);
@@ -46,6 +148,9 @@ export const authAPI = {
     }
   },
   register: async (userData) => {
+    // Clear cache on register
+    apiCache.clear();
+    
     const response = await api.post('/api/auth/register', userData);
     return response.data;
   },
@@ -55,6 +160,28 @@ export const authAPI = {
       return response.data;
     } catch (error) {
       throw error;
+    }
+  },
+  refreshToken: async () => {
+    try {
+      // Skip caching for token refresh
+      const response = await api.post('/api/auth/refresh-token', {}, { skipCache: true });
+      return response.data;
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      throw error;
+    }
+  },
+  logout: async () => {
+    // Clear cache on logout
+    apiCache.clear();
+    
+    try {
+      await api.post('/api/auth/logout');
+      localStorage.removeItem('token');
+    } catch (error) {
+      console.error('Logout error:', error);
+      localStorage.removeItem('token');
     }
   }
 };
@@ -108,7 +235,7 @@ export const mentorAPI = {
   },
 
   getProfile: async () => {
-    const response = await api.get('/api/mentor/profile');
+    const response = await api.get('/api/mentor/profile/me');
     return response.data;
   },
 
@@ -329,6 +456,15 @@ export const dashboardAPI = {
       throw error;
     }
   }
+};
+
+// Add cache invalidation helpers
+export const invalidateCache = (keyPattern) => {
+  apiCache.invalidate(keyPattern);
+};
+
+export const clearCache = () => {
+  apiCache.clear();
 };
 
 export default api; 

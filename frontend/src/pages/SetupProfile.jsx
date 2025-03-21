@@ -29,7 +29,9 @@ const SetupProfile = () => {
 
   const loadProfile = async () => {
     try {
+      setLoading(true);
       const profile = await mentorAPI.getProfile();
+
       setFormData({
         name: profile.name || '',
         title: profile.title || '',
@@ -40,9 +42,20 @@ const SetupProfile = () => {
       });
     } catch (error) {
       console.error('Error loading profile:', error);
+
+      // Default to user data from auth context if profile fetch fails
+      setFormData({
+        name: user.name || '',
+        title: user.title || '',
+        bio: user.bio || '',
+        expertise: user.expertise ? user.expertise.join(', ') : '',
+        email: user.email || '',
+        phone: ''
+      });
+
       toast({
-        title: "Error",
-        description: "Failed to load profile data",
+        title: "Profile Load Error",
+        description: "We couldn't load your saved profile. Starting with basic information.",
         variant: "destructive"
       });
     } finally {
@@ -112,7 +125,7 @@ const SetupProfile = () => {
             Cancel
           </Button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <Label htmlFor="name">Full Name *</Label>
